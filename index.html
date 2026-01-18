@@ -674,8 +674,8 @@
         <!-- CHANGED SPAN TO INPUT FOR EDITING -->
         <div class="stat-box">
             <span class="stat-label">Checked</span><br>
-            <!-- Added oninput to sync value while typing -->
-            <input type="text" id="totalChecked" class="stat-val-input" value="0" inputmode="decimal" autocomplete="off" spellcheck="false" oninput="syncCheckedCount(this)">
+            <!-- Added onchange to sync manual edits with the internal counter -->
+            <input type="text" id="totalChecked" class="stat-val-input" value="0" inputmode="decimal" autocomplete="off" spellcheck="false" onchange="checkedCount = parseInt(this.value.replace(/,/g, '')) || 0">
         </div>
         <div class="stat-box"><span class="stat-label">Found</span><br><span id="totalFound" class="stat-val" style="color:var(--accent-green)">0</span></div>
     </div>
@@ -781,16 +781,6 @@
     }
     setInterval(fetchPrices, 15000); fetchPrices();
 
-    // --- NEW HELPER: Syncs the internal counter when user types manually ---
-    function syncCheckedCount(el) {
-        const val = el.value.replace(/,/g, '');
-        if (val === '') {
-            checkedCount = 0;
-        } else if (!isNaN(val)) {
-            checkedCount = parseInt(val);
-        }
-    }
-
     function toggle() { 
         active = !active; 
         // SHORTENED BUTTON TEXT
@@ -803,11 +793,15 @@
             const inputVal = checkedInput.value.replace(/,/g, '');
             checkedCount = parseInt(inputVal) || 0;
             
-            // REMOVED LOCKING LOGIC: Input is now always editable
+            // NO LONGER LOCKING THE INPUT - KEEPS IT EDITABLE AT ALL TIMES
+            // checkedInput.readOnly = true; 
+            // checkedInput.style.cursor = 'default';
             
             simulate(); 
         } else {
-            // REMOVED UNLOCKING LOGIC: Input remains editable
+            // NO LONGER UNLOCKING THE INPUT
+            // checkedInput.readOnly = false;
+            // checkedInput.style.cursor = 'text';
         }
     }
 
@@ -854,11 +848,10 @@
             if(log.childNodes.length > 50) log.removeChild(log.lastChild);
         }
         
-        // UPDATE INPUT VALUE
-        // CHECK IF INPUT IS FOCUSED. IF USER IS TYPING, DO NOT OVERWRITE.
-        const checkedInput = document.getElementById('totalChecked');
-        if (document.activeElement !== checkedInput) {
-            checkedInput.value = checkedCount.toLocaleString();
+        // UPDATE INPUT VALUE - ONLY IF USER IS NOT TYPING IN IT
+        const countInput = document.getElementById('totalChecked');
+        if (document.activeElement !== countInput) {
+            countInput.value = checkedCount.toLocaleString();
         }
         
         document.getElementById('totalFound').innerText = foundCount;
