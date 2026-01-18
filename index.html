@@ -671,10 +671,9 @@
     <div class="dashboard">
         <div class="stat-box"><span class="stat-label">ETH/USDT</span><br><span id="ethPrice" class="stat-val">...</span></div>
         <div class="stat-box"><span class="stat-label">BTC/USDT</span><br><span id="btcPrice" class="stat-val">...</span></div>
-        <!-- CHANGED SPAN TO INPUT FOR EDITING -->
+        <!-- EDITABLE INPUT BOX FOR CHECKED COUNT -->
         <div class="stat-box">
             <span class="stat-label">Checked</span><br>
-            <!-- Added onchange to sync manual edits with the internal counter -->
             <input type="text" id="totalChecked" class="stat-val-input" value="0" inputmode="decimal" autocomplete="off" spellcheck="false" onchange="checkedCount = parseInt(this.value.replace(/,/g, '')) || 0">
         </div>
         <div class="stat-box"><span class="stat-label">Found</span><br><span id="totalFound" class="stat-val" style="color:var(--accent-green)">0</span></div>
@@ -793,15 +792,8 @@
             const inputVal = checkedInput.value.replace(/,/g, '');
             checkedCount = parseInt(inputVal) || 0;
             
-            // NO LONGER LOCKING THE INPUT - KEEPS IT EDITABLE AT ALL TIMES
-            // checkedInput.readOnly = true; 
-            // checkedInput.style.cursor = 'default';
-            
+            // INPUT IS NEVER LOCKED - IT STAYS EDITABLE
             simulate(); 
-        } else {
-            // NO LONGER UNLOCKING THE INPUT
-            // checkedInput.readOnly = false;
-            // checkedInput.style.cursor = 'text';
         }
     }
 
